@@ -1,0 +1,18 @@
+ИНСТРУКЦИИ ПО НАСТРОЙКЕ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ
+
+1. Создайте файл .env в корневой папке проекта
+
+2. Добавьте в файл .env следующие строки:
+
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+OPENAI_API_KEY=your_openai_api_key_here
+
+3. Замените значения на реальные токены:
+
+TELEGRAM_BOT_TOKEN - получите у @BotFather в Telegram
+OPENAI_API_KEY - получите на https://platform.openai.com/
+
+4. Сохраните файл .env
+
+ВАЖНО: Не добавляйте файл .env в систему контроля версий!
+
