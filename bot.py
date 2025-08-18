@@ -112,7 +112,19 @@ class UserState:
     
     def filter_technical_info(self, response):
         """Убирает техническую информацию из ответа AI для пользователя"""
-        # Удаляем все блоки в фигурных скобках
+        # Проверяем, содержит ли ответ запрос на проверку профайла
+        # Только если бот явно просит проверить профайл
+        if any(keyword in response.lower() for keyword in [
+            'посмотрите внимательно на заполненный профайл',
+            'всё ли верно отражено в предоставленной информации',
+            'хотите ли вы что-то дополнить или изменить',
+            'проверьте профайл',
+            'ознакомьтесь с профайлом'
+        ]):
+            # Если это запрос на проверку профайла - показываем его пользователю полностью
+            return response
+        
+        # Удаляем все блоки в фигурных скобках (кроме профайлов)
         filtered_response = re.sub(r'\{[^}]*\}', '', response)
         
         # Убираем лишние пустые строки
@@ -181,21 +193,8 @@ async def cmd_start(message: types.Message):
     user_state.name = None
     user_state.conversation_history = []
     
-    # Загружаем промт в зависимости от выбранного типа собеседования
-    try:
-        if user_state.interview_type == "soft":
-            user_state.prompt = await openai_client.load_prompt("Промт Soft Skills нейро-рекрутера для собеседований.txt")
-        elif user_state.interview_type == "hard":
-            user_state.prompt = await openai_client.load_prompt("Промт Hard Skills нейро-рекрутера для собеседований.txt")
-        elif user_state.interview_type == "experience":
-            user_state.prompt = await openai_client.load_prompt("prompt.txt")
-        else:
-            # По умолчанию используем промт для Experience
-            user_state.prompt = await openai_client.load_prompt("prompt.txt")
-    except Exception as e:
-        logger.error(f"Ошибка загрузки промта: {e}")
-        await message.answer("Извините, произошла ошибка при инициализации бота.")
-        return
+    # Промт будет загружен после выбора типа собеседования
+    # Пока оставляем None - загрузим позже
     
     # Показываем выбор режима собеседования
     welcome_text = """🤖 Добро пожаловать в бот для проведения собеседований!
@@ -346,6 +345,13 @@ async def handle_callback(callback: types.CallbackQuery):
         
     elif callback.data == "type_soft":
         user_state.interview_type = "soft"
+        # Загружаем правильный промт для Soft Skills
+        try:
+            user_state.prompt = await openai_client.load_prompt("Промт Soft Skills нейро-рекрутера для собеседований.txt")
+        except Exception as e:
+            logger.error(f"Ошибка загрузки промта Soft Skills: {e}")
+            user_state.prompt = await openai_client.load_prompt("prompt.txt")  # Fallback
+        
         await callback.message.edit_text(
             "💬 Выбран тип: Soft Skills (мягкие навыки)\n\n"
             "Как я могу к вам обращаться? (Введите ваше имя)"
@@ -354,6 +360,13 @@ async def handle_callback(callback: types.CallbackQuery):
         
     elif callback.data == "type_hard":
         user_state.interview_type = "hard"
+        # Загружаем правильный промт для Hard Skills
+        try:
+            user_state.prompt = await openai_client.load_prompt("Промт Hard Skills нейро-рекрутера для собеседований.txt")
+        except Exception as e:
+            logger.error(f"Ошибка загрузки промта Hard Skills: {e}")
+            user_state.prompt = await openai_client.load_prompt("prompt.txt")  # Fallback
+        
         await callback.message.edit_text(
             "💻 Выбран тип: Hard Skills (технические навыки)\n\n"
             "Как я могу к вам обращаться? (Введите ваше имя)"
@@ -362,6 +375,13 @@ async def handle_callback(callback: types.CallbackQuery):
         
     elif callback.data == "type_experience":
         user_state.interview_type = "experience"
+        # Загружаем правильный промт для Experience
+        try:
+            user_state.prompt = await openai_client.load_prompt("prompt.txt")
+        except Exception as e:
+            logger.error(f"Ошибка загрузки промта Experience: {e}")
+            user_state.prompt = await openai_client.load_prompt("prompt.txt")  # Fallback
+        
         await callback.message.edit_text(
             "📋 Выбран тип: Experience (опыт работы)\n\n"
             "Как я могу к вам обращаться? (Введите ваше имя)"
